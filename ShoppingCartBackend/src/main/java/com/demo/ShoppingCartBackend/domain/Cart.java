@@ -10,27 +10,37 @@ import java.util.List;
 @Entity
 public class Cart {
 
+    public enum CartType{
+        VIP, ESPECIALDATE, COMMON
+    }
+
     @Id
     @GeneratedValue
     private Long id;
     private BigDecimal total;
+    private BigDecimal totalWithDiscount;
     @Column(name = "created_date", nullable = false, updatable = false)
     private LocalDateTime createdDate;
-    private boolean finished;
+    @Column(name = "updated_date")
+    private LocalDateTime updatedDate;
     @ManyToOne
     @JoinColumn(name = "client_id", nullable = false, updatable = false)
     private Client client;
     @JsonManagedReference
-    @Column(name = "cart_product_id", nullable = false, updatable = false)
     @OneToMany
     private List<CartProduct> cartProducts;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cart_type", nullable = false, updatable = false)
+    private CartType cartType;
 
-    public Cart(BigDecimal total, LocalDateTime createdDate, boolean finished, Client client, List<CartProduct> cartProducts) {
+    public Cart(BigDecimal total, BigDecimal totalWithDiscount, LocalDateTime createdDate, LocalDateTime updatedDate, Client client, List<CartProduct> cartProducts, CartType cartType) {
         this.total = total;
+        this.totalWithDiscount = totalWithDiscount;
         this.createdDate = createdDate;
-        this.finished = finished;
+        this.updatedDate = updatedDate;
         this.client = client;
         this.cartProducts = cartProducts;
+        this.cartType = cartType;
     }
 
     public Cart() {
@@ -52,6 +62,14 @@ public class Cart {
         this.total = total;
     }
 
+    public BigDecimal getTotalWithDiscount() {
+        return totalWithDiscount;
+    }
+
+    public void setTotalWithDiscount(BigDecimal totalWithDiscount) {
+        this.totalWithDiscount = totalWithDiscount;
+    }
+
     public LocalDateTime getCreatedDate() {
         return createdDate;
     }
@@ -60,12 +78,12 @@ public class Cart {
         this.createdDate = createdDate;
     }
 
-    public boolean isFinished() {
-        return finished;
+    public LocalDateTime getUpdatedDate() {
+        return updatedDate;
     }
 
-    public void setFinished(boolean finished) {
-        this.finished = finished;
+    public void setUpdatedDate(LocalDateTime updatedDate) {
+        this.updatedDate = updatedDate;
     }
 
     public Client getClient() {
@@ -82,5 +100,13 @@ public class Cart {
 
     public void setCartProducts(List<CartProduct> cartProducts) {
         this.cartProducts = cartProducts;
+    }
+
+    public CartType getCartType() {
+        return cartType;
+    }
+
+    public void setCartType(CartType cartType) {
+        this.cartType = cartType;
     }
 }
