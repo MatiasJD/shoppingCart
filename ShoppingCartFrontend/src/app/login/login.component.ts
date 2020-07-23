@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import {LoginService} from '../service/login.service';
 import {Router} from '@angular/router';
+import {error} from 'selenium-webdriver';
 
 
 @Component({
@@ -12,6 +13,7 @@ export class LoginComponent implements OnInit {
 
   email;
   password;
+  message;
 
   constructor(private loginService: LoginService, private router: Router) { }
 
@@ -25,9 +27,17 @@ export class LoginComponent implements OnInit {
         this.loginService.authenticated = true;
         this.loginService.email= user.email;
         this.loginService.password= user.password;
+        this.message = null;
         this.router.navigate(['shoppingCart']);
       }
+    },error => {
+      console.log(error.error.message);
+      this.message = error.error.message;
     });
+  }
+
+  changeMessage(){
+    this.message = false;
   }
 
 }

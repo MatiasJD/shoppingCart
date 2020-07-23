@@ -2,3 +2,17 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+.my-table{
+  width: 100%;
+  overflow: auto;
+}
+
+td.mat-footer-cell{
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.mat-table-sticky {
+  border-top: 1px solid #e0e0e0;
+}

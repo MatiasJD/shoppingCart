@@ -1,1 +1,95 @@
-<p>client-reports works!</p>
+<mat-accordion>
+  <mat-expansion-panel>
+
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Clientes que comenzaron a ser vip en un mes
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <mat-form-field>
+      <input matInput [matDatepicker]="pickerVip"
+             (dateInput)="changeDateInicioVip($event)" (dateChange)="changeDateInicioVip($event)">
+      <mat-datepicker-toggle matSuffix [for]="pickerVip"></mat-datepicker-toggle>
+      <mat-datepicker #pickerVip></mat-datepicker>
+    </mat-form-field>
+
+    <mat-panel-description>
+      la fecha no se tiene en cuenta solo el mes y el año, formato MM-dd-yyyy
+    </mat-panel-description>
+
+    <button mat-raised-button style="margin: 20px" color="accent" (click)="buscarClientesVipPorMes()">Buscar</button>
+
+  </mat-expansion-panel>
+
+  <mat-expansion-panel>
+
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Clientes que dejaron de ser vip en un mes
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <mat-form-field>
+      <input matInput [matDatepicker]="pickerNoVip"
+             (dateInput)="changeDateFinVip($event)" (dateChange)="changeDateFinVip($event)">
+      <mat-datepicker-toggle matSuffix [for]="pickerNoVip"></mat-datepicker-toggle>
+      <mat-datepicker #pickerNoVip></mat-datepicker>
+    </mat-form-field>
+
+    <mat-panel-description>
+      la fecha no se tiene en cuenta solo el mes y el año, formato MM-dd-yyyy
+    </mat-panel-description>
+
+    <button mat-raised-button style="margin: 20px" color="accent" (click)="buscarClientesNoVipPorMes()">Buscar</button>
+
+  </mat-expansion-panel>
+
+  <mat-expansion-panel>
+
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Clientes que son vip
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <button mat-raised-button style="margin: 20px" color="accent" (click)="buscarClientesVip()">Buscar</button>
+
+  </mat-expansion-panel>
+</mat-accordion>
+
+<table mat-table [dataSource]="clients" class="mat-elevation-z8 my-table">
+
+  <ng-container [matColumnDef]="'name'">
+    <th mat-header-cell *matHeaderCellDef> Nombre </th>
+    <td mat-cell *matCellDef="let element"> {{element.name}} </td>
+  </ng-container>
+
+  <ng-container [matColumnDef]="'surname'">
+    <th mat-header-cell *matHeaderCellDef> Apellido </th>
+    <td mat-cell *matCellDef="let element"> {{element.surname}} </td>
+  </ng-container>
+
+  <ng-container [matColumnDef]="'email'">
+    <th mat-header-cell *matHeaderCellDef> Email </th>
+    <td mat-cell *matCellDef="let element"> {{element.email}} </td>
+  </ng-container>
+
+  <ng-container [matColumnDef]="'vipStartDate'">
+    <th mat-header-cell *matHeaderCellDef> Fecha de inicio de vip </th>
+    <td mat-cell *matCellDef="let element"> {{element.vipStartDate}} </td>
+  </ng-container>
+
+  <ng-container [matColumnDef]="'vipEndDate'">
+    <th mat-header-cell *matHeaderCellDef> Fecha fin de vip </th>
+    <td mat-cell *matCellDef="let element"> {{element.vipEndDate}} </td>
+  </ng-container>
+
+  <ng-container [matColumnDef]="'vip'">
+    <th mat-header-cell *matHeaderCellDef> Estado vip </th>
+    <td mat-cell *matCellDef="let element"> {{element.vip}} </td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-row *matRowDef="let element; columns: displayedColumns;"></tr>
+</table>

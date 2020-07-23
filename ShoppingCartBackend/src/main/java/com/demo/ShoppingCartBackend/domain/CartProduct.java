@@ -1,6 +1,6 @@
 package com.demo.ShoppingCartBackend.domain;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -18,8 +18,8 @@ public class CartProduct {
     @JoinColumn(name = "product_id", nullable = false, updatable = false)
     private Product product;
     @ManyToOne
-    @JsonBackReference
     @JoinColumn(name = "cart_id", nullable = false, updatable = false)
+    @JsonIgnore
     private Cart cart;
 
     public CartProduct(int cant, BigDecimal subtotal, Product product, Cart cart) {

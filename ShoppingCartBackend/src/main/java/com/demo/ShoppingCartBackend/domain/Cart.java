@@ -1,6 +1,6 @@
 package com.demo.ShoppingCartBackend.domain;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -18,6 +18,7 @@ public class Cart {
     @GeneratedValue
     private Long id;
     private BigDecimal total;
+    @Column(name = "total_with_discount")
     private BigDecimal totalWithDiscount;
     @Column(name = "created_date", nullable = false, updatable = false)
     private LocalDateTime createdDate;
@@ -25,9 +26,10 @@ public class Cart {
     private LocalDateTime updatedDate;
     @ManyToOne
     @JoinColumn(name = "client_id", nullable = false, updatable = false)
+    @JsonIgnore
     private Client client;
-    @JsonManagedReference
-    @OneToMany
+    @OneToMany(cascade = CascadeType.ALL,
+            mappedBy = "cart", orphanRemoval = true)
     private List<CartProduct> cartProducts;
     @Enumerated(EnumType.STRING)
     @Column(name = "cart_type", nullable = false, updatable = false)

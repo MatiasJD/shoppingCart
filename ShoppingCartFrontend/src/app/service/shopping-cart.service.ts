@@ -30,11 +30,15 @@ export class ShoppingCartService {
   }
 
   deleteCartProduct(cartProduct): Observable<any>{
-    return this.http.post(this.baseUrl + '/deleteCartProduct', cartProduct);
+    return this.http.delete(this.baseUrl + '/deleteCartProduct/' + cartProduct);
   }
 
-  deleteCart(){
-    return this.http.post(this.baseUrl + '/deleteCart', this.cart);
+  deleteCart(): Observable<any>{
+    return this.http.delete(this.baseUrl + '/deleteCart/' + this.cart.id);
+  }
+
+  finishBuy(): Observable<any>{
+    return this.http.get(this.baseUrl + '/finishBuy/' + this.cart.id);
   }
 
 }

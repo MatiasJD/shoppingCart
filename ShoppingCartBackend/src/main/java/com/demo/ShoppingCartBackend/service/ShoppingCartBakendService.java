@@ -2,14 +2,11 @@ package com.demo.ShoppingCartBackend.service;
 
 import com.demo.ShoppingCartBackend.domain.*;
 import com.demo.ShoppingCartBackend.repository.*;
-import org.apache.tomcat.jni.Local;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sun.util.resources.sr.LocaleNames_sr_Latn;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,8 +34,12 @@ public class ShoppingCartBakendService {
         this.logger = LoggerFactory.getLogger(ShoppingCartBakendService.class);
     }
 
-    public Client getClientByEmail(String email){
-        return clientRepository.findByEmail(email);
+    public Client getClientByEmail(String email) throws Exception {
+        Client client = clientRepository.findByEmail(email);
+        if (client == null){
+            throw new Exception("Email incorrecto");
+        }
+        return client;
     }
 
     public List<Client> getClients(){
@@ -97,9 +98,12 @@ public class ShoppingCartBakendService {
     }
 
     @Transactional
-    public Cart saveCartWithProduct(Wrapper wrapper){
+    public Cart saveCartWithProduct(Wrapper wrapper) throws Exception {
         Product product = wrapper.getProduct();
         Cart cart = wrapper.getCart();
+        if( !exist(cart) ){
+            throw new Exception("No existe ningún carrito o fue eliminado por terminar el día en que se comenzó la compra");
+        }
         int cant = wrapper.getCant();
 
         CartProduct cartProduct = new CartProduct();
@@ -107,14 +111,7 @@ public class ShoppingCartBakendService {
         cartProduct.setCant(cant);
         cartProduct.setProduct(product);
         cartProduct.setCart(cart);
-
-        cartProduct = cartProductRepository.saveAndFlush(cartProduct);
-
-        if (cart.getTotal() == null){
-            cart.setTotal(cartProduct.getSubtotal());
-        } else {
-            cart.setTotal(cart.getTotal().add(cartProduct.getSubtotal()));
-        }
+//        cartProduct = cartProductRepository.saveAndFlush(cartProduct);
 
         if (cart.getCartProducts() != null){
             cart.getCartProducts().add(cartProduct);
@@ -124,69 +121,126 @@ public class ShoppingCartBakendService {
             cart.setCartProducts(cartProductList);
         }
 
+        applyDiscount(cart);
         return cartRepository.saveAndFlush(cart);
     }
 
     @Transactional
-    public Cart updateCart(Cart cart){
-        BigDecimal total = new BigDecimal(0);
-        int cantidadItems = 0;
-        for (CartProduct cartProduct: cart.getCartProducts()){
-            cantidadItems += cartProduct.getCant();
-            BigDecimal subtotal = new BigDecimal(cartProduct.getCant()).multiply(cartProduct.getProduct().getPrice());
-            cartProduct.setSubtotal(subtotal);
-            total.add(subtotal);
+    public Cart updateCart(Cart cart) throws Exception {
+        if( !exist(cart) ){
+            throw new Exception("No existe ningún carrito o fue eliminado por terminar el día en que se comenzó la compra");
         }
-        applyDiscount(cart, cantidadItems, total);
+        updateCartProducts(cart);
 
-        cart.setCartProducts(cartProductRepository.saveAll(cart.getCartProducts()));
+        applyDiscount(cart);
         return cartRepository.saveAndFlush(cart);
     }
 
-    public void applyDiscount(Cart cart, int cantidadItems, BigDecimal total){
-        if(cantidadItems > 5 && cantidadItems <= 10){
-            cart.setTotal(total.multiply(new BigDecimal(0.9)));
-        } else {
-            if(cart.getCartType().equals(Cart.CartType.VIP)){
-                total = total.subtract(new BigDecimal(700));
-            } else if(cart.getCartType().equals(Cart.CartType.ESPECIALDATE)){
-                total = total.subtract(new BigDecimal(500));
+    public void applyDiscount(Cart cart){
+        BigDecimal total = getTotal(cart.getCartProducts());
+        int cantidadItems = getCantitdadItems(cart.getCartProducts());
+        BigDecimal totalWithDiscount = new BigDecimal(total.toString());
+        if(cantidadItems > 5 ){
+            if(cantidadItems <= 10){
+                totalWithDiscount = total.multiply(new BigDecimal("0.9"));
             } else {
-                total = total.subtract(new BigDecimal(200));
+                if(cart.getCartType().equals(Cart.CartType.VIP)){
+                    totalWithDiscount = total.subtract(new BigDecimal(700));
+                } else if(cart.getCartType().equals(Cart.CartType.ESPECIALDATE)){
+                    totalWithDiscount = total.subtract(new BigDecimal(500));
+                } else {
+                    totalWithDiscount = total.subtract(new BigDecimal(200));
+                }
             }
-            total = total.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : total;
-            cart.setTotal(total);
+            cart.setTotalWithDiscount(
+                    totalWithDiscount.compareTo(BigDecimal.ZERO) <= 0 ? BigDecimal.ZERO : totalWithDiscount
+            );
+        } else {
+            cart.setTotalWithDiscount(total);
+        }
+        cart.setTotal(total);
+
+    }
+
+    private BigDecimal getTotal(List<CartProduct> cartProductList) {
+        BigDecimal total = new BigDecimal(0);
+        for (CartProduct item: cartProductList){
+            total = total.add(item.getSubtotal());
+        }
+        return total;
+    }
+
+    private int getCantitdadItems(List<CartProduct> cartProductList){
+        int cantidadItems = 0;
+        for (CartProduct item: cartProductList){
+            cantidadItems += item.getCant();
+        }
+        return cantidadItems;
+    }
+
+    private void updateCartProducts(Cart cart) {
+        for (CartProduct item: cart.getCartProducts()){
+            BigDecimal subtotal = new BigDecimal(item.getCant()).multiply(item.getProduct().getPrice());
+            item.setSubtotal(subtotal);
         }
     }
 
     @Transactional
-    public Cart deleteCardProduct(CartProduct cartProduct){
-        Cart cart = cartRepository.findCartByCartProducts(cartProduct.getId());
-        cartProductRepository.delete(cartProduct);
-        cart.getCartProducts().forEach(elements -> {
-            if(elements.getId() == cartProduct.getId())
-                cart.getCartProducts().remove(elements);
-        });
-
-        BigDecimal total = new BigDecimal(0);
-        int cantidadItems = 0;
-        for (CartProduct element: cart.getCartProducts()){
-            cantidadItems += cartProduct.getCant();
-            total.add(new BigDecimal(cartProduct.getCant()).multiply(cartProduct.getProduct().getPrice()));
+    public Cart deleteCardProduct(Long id) throws Exception {
+        Cart cart = cartRepository.findCartByCartProducts(id);
+        if(cart == null){
+            throw new Exception("No existe ningún carrito o fue eliminado por terminar el día en que se comenzó la compra");
         }
-        applyDiscount(cart, cantidadItems, total);
+//        cartProductRepository.deleteById(id);
+        for(CartProduct cartProduct : cart.getCartProducts()) {
+            if (cartProduct.getId().compareTo(id) == 0){
+                cart.getCartProducts().remove(cartProduct);
+                break;
+            }
+        }
+        applyDiscount(cart);
         return cartRepository.saveAndFlush(cart);
     }
 
     @Transactional
-    public boolean deleteCart(Cart cart) {
-        cartProductRepository.deleteAll(cart.getCartProducts());
-        cartRepository.delete(cart);
+    public Cart deleteCart(Long id) throws Exception {
+        Cart cart = new Cart();
+        cart.setId(id);
+        if( !exist(cart) ){
+            throw new Exception("No existe ningún carrito o fue eliminado por terminar el día en que se comenzó la compra");
+        }
+        cart = cartRepository.getOne(id);
+//        cartProductRepository.deleteAll(cart.getCartProducts());
+        cart.getCartProducts().clear();
+        return cart;
+    }
+
+    @Transactional
+    public boolean finishBuy(Long id) throws Exception{
+        Cart cart = new Cart();
+        cart.setId(id);
+        if( !exist(cart) ){
+            throw new Exception("No existe ningún carrito o fue eliminado por terminar el día en que se comenzó la compra");
+        }
+        cart = cartRepository.getOne(id);
+        cart.setUpdatedDate(LocalDateTime.now());
+        cartRepository.saveAndFlush(cart);
+        verificarVip(id);
         return true;
     }
 
-    public boolean finishBuy(Long id){
-        return cartRepository.updateUpdatedDate(id, LocalDateTime.now());
+    @Transactional
+    public void verificarVip(Long id){
+        Client client = clientRepository.findByCartId(id);
+        if(!client.isVip()){
+            client = clientRepository.superaTotalEnElMes(client.getId(), new BigDecimal("10000"), LocalDate.now());
+            if(client != null){
+                client.setVip(true);
+                client.setVipEndDate(null);
+                client.setVipStartDate(LocalDate.now());
+                clientRepository.saveAndFlush(client);
+            }
+        }
     }
 
     @Transactional
@@ -195,48 +249,79 @@ public class ShoppingCartBakendService {
         cartRepository.deleteCartsNotFinished(date);
     }
 
-    public List<Client> addClients() {
-        List<Client> clientList = new ArrayList<>();
-        clientList.add(new Client("test1@test.com", "1234", "test", "1", true, LocalDate.now(), null));
-        clientList.add(new Client("prueba2@test.com", "1234", "prueba", "2", true, LocalDate.of(2020,6,20), null));
-        clientList.add(new Client("nuevo3@test.com", "1234", "nuevo3", "3", true, LocalDate.of(2020,6,20), null));
-        clientList.add(new Client("nuevo4@test.com", "1234", "nuevo4", "4", false, null, LocalDate.now()));
-        clientList.add(new Client("nuevo5@test.com", "1234", "nuevo5", "5", false, null, LocalDate.of(2020,8,20)));
-        clientList.add(new Client("nuevo6@test.com", "1234", "nuevo6", "6", false, null, LocalDate.of(2020,8,20)));
-        logger.info("guardando clientes");
-        return clientRepository.saveAll(clientList);
+    public void changeVip(LocalDate date){
+        List<Client> clientList = clientRepository.getClientesQueNoRealizaronCompras(date);
+        clientList.forEach(client -> {
+            if(client.isVip()){
+                client.setVipEndDate(LocalDate.now());
+            }
+            client.setVip(false);
+        });
+        clientRepository.saveAll(clientList);
     }
 
-    public List<Product> addProducts() {
+    public boolean exist(Cart cart) throws Exception{
+        if (cart.getId()!=null){
+            if(cartRepository.getOne(cart.getId()) != null){
+                return true;
+            } else {
+                throw new Exception("No existe ningún carrito o fue eliminado por terminar el día");
+            }
+        }
+        return false;
+    }
+
+    public boolean addClients() {
+        List<Client> clientList = new ArrayList<>();
+        clientList.add(new Client("test@test.com", "1234", "test", "1", true, LocalDate.now(), null));
+        clientList.add(new Client("prueba@test.com", "1234", "prueba", "2", true, LocalDate.of(2020,6,20), null));
+        clientList.add(new Client("nuevo@test.com", "1234", "nuevo", "3", true, LocalDate.of(2020,6,20), null));
+        clientList.add(new Client("nuevo1@test.com", "1234", "nuevo1", "4", false, null, LocalDate.now()));
+        clientList.add(new Client("nuevo2@test.com", "1234", "nuevo2", "5", false, null, LocalDate.of(2020,8,20)));
+        clientList.add(new Client("nuevo3@test.com", "1234", "nuevo3", "6", false, null, LocalDate.of(2020,8,20)));
+
+        logger.info("guardando clientes");
+        clientRepository.saveAll(clientList);
+        return true;
+    }
+
+    public boolean addProducts() {
         List<Product> productList = new ArrayList<>();
         productList.add(new Product("Libre C++", new BigDecimal("300")));
         productList.add(new Product("Libro Java", new BigDecimal("300")));
         productList.add(new Product("Arquitectura de Software", new BigDecimal("500")));
+        productList.add(new Product("Arquitectura", new BigDecimal("500")));
+        productList.add(new Product("Notebook", new BigDecimal("70000")));
+        productList.add(new Product("Teclado mecanico", new BigDecimal("6000")));
+        productList.add(new Product("Auriculares", new BigDecimal("2000")));
+        productList.add(new Product("Mouse", new BigDecimal("3000")));
+        productList.add(new Product("Mouse pad", new BigDecimal("100")));
+        productList.add(new Product("Libro JavaScript", new BigDecimal("900")));
+        productList.add(new Product("Silla de Oficina", new BigDecimal("10000")));
+
         logger.info("guardando productos");
-        return productRepository.saveAll(productList);
+        productRepository.saveAll(productList);
+        return true;
     }
 
-    public List<Cart> addCarts() {
-        this.addClients();
-        this.addProducts();
-        Client client = new Client();
-        client.setId(1L);
-        Cart cart = new Cart();
-        cart.setCartType(Cart.CartType.VIP);
-        cart.setCreatedDate(LocalDateTime.now());
-        cart.setClient(client);
+    public boolean addEspecialDate(){
+        List<EspecialDate> especialDateList = new ArrayList<>();
+        especialDateList.add(new EspecialDate(LocalDate.of(2020,7,30)));
+        especialDateList.add(new EspecialDate(LocalDate.of(2020,7,23)));
+        especialDateList.add(new EspecialDate(LocalDate.of(2020,8,1)));
+        especialDateList.add(new EspecialDate(LocalDate.of(2020,7,25)));
+        especialDateList.add(new EspecialDate(LocalDate.of(2020,8,3)));
+        especialDateList.add(new EspecialDate(LocalDate.of(2020,7,28)));
 
-        Client client2 = new Client();
-        client2.setId(2L);
-        Cart cart2 = new Cart();
-        cart2.setCartType(Cart.CartType.VIP);
-        cart2.setCreatedDate(LocalDateTime.now());
-        cart2.setClient(client2);
+        logger.info("guardando especial dates");
+        especialDateRepository.saveAll(especialDateList);
+        return true;
+    }
 
-        List<Cart> cartList = new ArrayList<>();
-        cartList.add(cart);
-        cartList.add(cart2);
-        logger.info("guardando carts");
-        return cartRepository.saveAll(cartList);
+    public boolean addData() {
+        addClients();
+        addProducts();
+        addEspecialDate();
+        return true;
     }
 }

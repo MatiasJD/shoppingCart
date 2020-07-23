@@ -1,7 +1,7 @@
-import {Component, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {ProductsService} from '../service/products.service';
-import {MatPaginator} from '@angular/material/paginator';
 import {ShoppingCartService} from '../service/shopping-cart.service';
+import {Router} from '@angular/router';
 
 export interface Product {
   id: number,
@@ -15,17 +15,12 @@ export interface Product {
   templateUrl: './product-list.component.html',
   styleUrls: ['./product-list.component.css']
 })
-
 export class ProductListComponent implements OnInit {
-
-  @Output() selected = new EventEmitter();
 
   displayedColumns: string[] = ['name', 'price', 'cant', 'add'];
   products: Product[];
 
-  @ViewChild(MatPaginator, {static: true}) paginator: MatPaginator;
-
-  constructor(private productsService: ProductsService, private shoppingCartService: ShoppingCartService) {
+  constructor(private productsService: ProductsService, private shoppingCartService: ShoppingCartService, private router: Router) {
   }
 
   ngOnInit(): void {
@@ -39,5 +34,6 @@ export class ProductListComponent implements OnInit {
 
   selectedProduct(product): void {
     this.shoppingCartService.product = product;
+    this.router.navigate(['/shoppingCart']);
   }
 }

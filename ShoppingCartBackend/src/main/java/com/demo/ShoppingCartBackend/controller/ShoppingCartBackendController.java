@@ -5,7 +5,6 @@ import com.demo.ShoppingCartBackend.service.ShoppingCartBakendService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.repository.query.Param;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,14 +25,14 @@ public class ShoppingCartBackendController {
         this.logger = LoggerFactory.getLogger(ShoppingCartBackendController.class);
     }
 
-    @GetMapping(path = "/clients")
-    public List<Client> getClients(){
-        return shoppingCartBakendService.getClients();
-    }
-
     @GetMapping(path = "/products")
     public List<Product> getProducts(){
         return shoppingCartBakendService.getProducts();
+    }
+
+    @GetMapping(path = "/clients")
+    public List<Client> getClients(){
+        return shoppingCartBakendService.getClients();
     }
 
     @GetMapping(path = "/clientsVip")
@@ -43,24 +42,24 @@ public class ShoppingCartBackendController {
 
     @GetMapping(path = "/clientsVipStartDate")
     public List<Client> getClientsVipStartDate(@RequestParam("date")
-                                                   @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date){
+                                                   @DateTimeFormat(pattern = "yyyy-dd-MM") LocalDate date){
         return shoppingCartBakendService.getClientsVipStartDate(date);
     }
 
     @GetMapping(path = "/clientsVipEndDate")
     public List<Client> getClientsVipEndDate(@RequestParam("date")
-                                                 @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date){
+                                                 @DateTimeFormat(pattern = "yyyy-dd-MM") LocalDate date){
         return shoppingCartBakendService.getClientsVipEndDate(date);
-    }
-
-    @GetMapping(path = "/getCart/{email}")
-    public Cart getCart(@PathVariable("email") String email) throws Exception{
-        return shoppingCartBakendService.getCartByClient(email);
     }
 
     @GetMapping(path = "/getUser/{email}")
     public Client getUser(@PathVariable("email") String email) throws Exception{
         return shoppingCartBakendService.getClientByEmail(email);
+    }
+
+    @GetMapping(path = "/getCart/{email}")
+    public Cart getCart(@PathVariable("email") String email) throws Exception{
+        return shoppingCartBakendService.getCartByClient(email);
     }
 
     @PostMapping(path = "/saveCart")
@@ -73,14 +72,14 @@ public class ShoppingCartBackendController {
         return shoppingCartBakendService.updateCart(cart);
     }
 
-    @PostMapping(path = "/deleteCartProduct")
-    public Cart deleteCartProduct(@RequestBody CartProduct cartProduct) throws Exception{
-        return shoppingCartBakendService.deleteCardProduct(cartProduct);
+    @DeleteMapping(path = "/deleteCart/{id}")
+    public Cart deleteCart(@PathVariable("id") Long id) throws Exception{
+        return shoppingCartBakendService.deleteCart(id);
     }
 
-    @PostMapping(path = "/deleteCart")
-    public boolean deleteCart(@RequestBody Cart cart) throws Exception{
-        return shoppingCartBakendService.deleteCart(cart);
+    @DeleteMapping(path = "/deleteCartProduct/{id}")
+    public Cart deleteCartProduct(@PathVariable("id") Long id) throws Exception{
+        return shoppingCartBakendService.deleteCardProduct(id);
     }
 
     @GetMapping(path = "/finishBuy/{id}")
@@ -88,18 +87,8 @@ public class ShoppingCartBackendController {
         return shoppingCartBakendService.finishBuy(id);
     }
 
-    @GetMapping(path = "/addCarts")
-    public List<Cart> addCarts() throws Exception{
-        return shoppingCartBakendService.addCarts();
-    }
-
-    @GetMapping(path = "/addClients")
-    public List<Client> addClients(){
-        return shoppingCartBakendService.addClients();
-    }
-
-    @GetMapping(path = "/addProducts")
-    public List<Product> addProducts(){
-        return shoppingCartBakendService.addProducts();
+    @GetMapping(path = "/addData")
+    public boolean addData() throws Exception{
+        return shoppingCartBakendService.addData();
     }
 }

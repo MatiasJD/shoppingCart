@@ -6,13 +6,16 @@
     <form class="my-form">
       <mat-form-field class="full-width">
         <mat-label>Email</mat-label>
-        <input  matInput  placeholder="Email" name="email" [(ngModel)]="email">
+        <input  matInput  placeholder="Email" name="email" [(ngModel)]="email" (ngModelChange)="changeMessage()">
       </mat-form-field>
       <mat-form-field class="full-width">
         <mat-label>Password</mat-label>
         <input  matInput  placeholder="Password" name="password" [(ngModel)]="password">
       </mat-form-field>
     </form>
+    <div style="color: red" *ngIf="message">
+      {{message}}
+    </div>
   </mat-card-content>
   <mat-card-actions>
     <button mat-raised-button (click)="login()" color="primary">LOGIN</button>
