@@ -17,12 +17,10 @@ import java.util.List;
 public class ShoppingCartBackendController {
 
     private ShoppingCartBakendService shoppingCartBakendService;
-    private Logger logger;
 
     @Autowired
     public ShoppingCartBackendController(ShoppingCartBakendService shoppingCartBakendService) {
         this.shoppingCartBakendService = shoppingCartBakendService;
-        this.logger = LoggerFactory.getLogger(ShoppingCartBackendController.class);
     }
 
     @GetMapping(path = "/products")
